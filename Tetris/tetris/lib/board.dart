@@ -20,6 +20,8 @@ class GameBoard extends StatefulWidget {
 class _GameBoardState extends State<GameBoard> {
   Piece currentPiece = Piece(type: Tetromino.L);
 
+  int currentScore = 0; //スコア
+
   @override
   void initState() {
     //初期状態
@@ -40,6 +42,7 @@ class _GameBoardState extends State<GameBoard> {
       framerate,
       (timer) {
         setState(() {
+          clearLines();
           checkLanding();
           currentPiece.movePiece(Direction.down);
         });
@@ -96,7 +99,7 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void moveLeft() {
-    if(!checkCollision(Direction.left)){
+    if (!checkCollision(Direction.left)) {
       setState(() {
         currentPiece.movePiece(Direction.left);
       });
@@ -104,12 +107,11 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void moveRight() {
-    if(!checkCollision(Direction.right)){
+    if (!checkCollision(Direction.right)) {
       setState(() {
         currentPiece.movePiece(Direction.right);
       });
     }
-
   }
 
   void rotatePiece() {
@@ -118,14 +120,27 @@ class _GameBoardState extends State<GameBoard> {
     });
   }
 
-  void clearLines(){
-    for(int row = colLength - 1; row >= 0; row--){
-      bool rowIsFull = true;
+  //行消し
+  void clearLines() {
+    for (int row = colLength - 1; row >= 0; row--) {
+      bool rowIsFull = true; //その行のすべてにブロックが入っているか
 
-      for(int col = 0; col < rowLength; col++){
-        
+      for (int col = 0; col < rowLength; col++) {
+        if (gameBoard[row][col] == null) {
+          rowIsFull = false;
+          break;
+        }
       }
-    } 
+      //消す操作
+      if (rowIsFull) {
+        for (int r = row; r > 0; r--) {
+          gameBoard[r] = List.from(gameBoard[r - 1]);
+        }
+        gameBoard[0] == List.generate(row, (index)=> null);
+
+        currentScore++;
+      }
+    }
   }
 
   @override
@@ -156,8 +171,9 @@ class _GameBoardState extends State<GameBoard> {
                     }
                   }),
             ),
+            Text('Score: $currentScore',style: TextStyle(color: Colors.white,fontSize: 20),),
             Padding(
-              padding: const EdgeInsets.only(bottom: 50),
+              padding: const EdgeInsets.only(bottom: 50,top: 20),
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
