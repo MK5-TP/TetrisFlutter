@@ -22,6 +22,8 @@ class _GameBoardState extends State<GameBoard> {
 
   int currentScore = 0; //スコア
 
+  bool gameOver = false;
+
   @override
   void initState() {
     //初期状態
@@ -44,10 +46,42 @@ class _GameBoardState extends State<GameBoard> {
         setState(() {
           clearLines();
           checkLanding();
+          if (gameOver) {
+            timer.cancel();
+            showGameOverDialog();
+          }
           currentPiece.movePiece(Direction.down);
         });
       },
     );
+  }
+
+  void showGameOverDialog() {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text("Game Over"),
+              content: Text("Your Score is: $currentScore"),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      resetGame();
+                      Navigator.pop(context);
+                    },
+                    child: Text("Play Again!"))
+              ],
+            ));
+  }
+
+  void resetGame(){
+    gameBoard =
+    List.generate(colLength, (i) => List.generate(rowLength, (j) => null));
+
+    gameOver = false;
+    currentScore = 0;
+
+    createNewPiece();
+    startGame();
   }
 
   //衝突判定
@@ -96,6 +130,10 @@ class _GameBoardState extends State<GameBoard> {
         Tetromino.values[rand.nextInt(Tetromino.values.length)];
     currentPiece = Piece(type: randomType);
     currentPiece.initialaizePiece();
+
+    if (isGameOver()) {
+      gameOver = true;
+    }
   }
 
   void moveLeft() {
@@ -136,11 +174,20 @@ class _GameBoardState extends State<GameBoard> {
         for (int r = row; r > 0; r--) {
           gameBoard[r] = List.from(gameBoard[r - 1]);
         }
-        gameBoard[0] == List.generate(row, (index)=> null);
+        gameBoard[0] == List.generate(row, (index) => null);
 
         currentScore++;
       }
     }
+  }
+
+  bool isGameOver() {
+    for (int col = 0; col < rowLength; col++) {
+      if (gameBoard[0][col] != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -160,20 +207,23 @@ class _GameBoardState extends State<GameBoard> {
                     int col = (index % rowLength);
                     if (currentPiece.position.contains(index)) {
                       return Pixel(
-                          color: Colors.yellow, child: index.toString());
+                          color: Colors.yellow, child:'');
                     } else if (gameBoard[row][col] != null) {
                       final Tetromino? tetrominoType = gameBoard[row][col];
                       return Pixel(
                           color: tetrominoColors[tetrominoType], child: '');
                     } else {
                       return Pixel(
-                          color: Colors.grey[900], child: index.toString());
+                          color: Colors.grey[900], child:'');
                     }
                   }),
             ),
-            Text('Score: $currentScore',style: TextStyle(color: Colors.white,fontSize: 20),),
+            Text(
+              'Score: $currentScore',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 50,top: 20),
+              padding: const EdgeInsets.only(bottom: 50, top: 20),
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
