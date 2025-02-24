@@ -65,6 +65,9 @@ class _GameBoardState extends State<GameBoard> {
       if (row >= colLength || col < 0 || col >= rowLength) {
         return true;
       }
+      if (row >= 0 && gameBoard[row][col] != null) {
+        return true;
+      }
     }
     return false;
   }
@@ -83,13 +86,13 @@ class _GameBoardState extends State<GameBoard> {
     }
   }
 
-  void createNewPiece(){
+  void createNewPiece() {
     Random rand = Random();
 
-    Tetromino randomType = Tetromino.values[rand.nextInt(Tetromino.values.length)];
+    Tetromino randomType =
+        Tetromino.values[rand.nextInt(Tetromino.values.length)];
     currentPiece = Piece(type: randomType);
     currentPiece.initialaizePiece();
-
   }
 
   @override
@@ -106,12 +109,10 @@ class _GameBoardState extends State<GameBoard> {
               int col = (index % rowLength);
               if (currentPiece.position.contains(index)) {
                 return Pixel(color: Colors.yellow, child: index.toString());
-              } 
-              else if(gameBoard[row][col] != null){
+              } else if (gameBoard[row][col] != null) {
                 final Tetromino? tetrominoType = gameBoard[row][col];
                 return Pixel(color: tetrominoColors[tetrominoType], child: '');
-              }              
-              else {
+              } else {
                 return Pixel(color: Colors.grey[900], child: index.toString());
               }
             }));
