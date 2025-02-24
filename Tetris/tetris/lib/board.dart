@@ -18,7 +18,7 @@ class GameBoard extends StatefulWidget {
 }
 
 class _GameBoardState extends State<GameBoard> {
-  Piece currentPiece = Piece(type: Tetromino.J);
+  Piece currentPiece = Piece(type: Tetromino.L);
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _GameBoardState extends State<GameBoard> {
     currentPiece.initialaizePiece();
 
     //1フレームのレート
-    Duration framerate = const Duration(milliseconds: 100);
+    Duration framerate = const Duration(milliseconds: 400);
     gameLoop(framerate);
   }
 
@@ -95,26 +95,97 @@ class _GameBoardState extends State<GameBoard> {
     currentPiece.initialaizePiece();
   }
 
+  void moveLeft() {
+    if(!checkCollision(Direction.left)){
+      setState(() {
+        currentPiece.movePiece(Direction.left);
+      });
+    }
+  }
+
+  void moveRight() {
+    if(!checkCollision(Direction.right)){
+      setState(() {
+        currentPiece.movePiece(Direction.right);
+      });
+    }
+
+  }
+
+  void rotatePiece() {
+    setState(() {
+      currentPiece.rotatePiece();
+    });
+  }
+
+  void clearLines(){
+    for(int row = colLength - 1; row >= 0; row--){
+      bool rowIsFull = true;
+
+      for(int col = 0; col < rowLength; col++){
+        
+      }
+    } 
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.black,
-        body: GridView.builder(
-            itemCount: rowLength * colLength,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: rowLength),
-            itemBuilder: (context, index) {
-              int row = (index / rowLength).floor();
-              int col = (index % rowLength);
-              if (currentPiece.position.contains(index)) {
-                return Pixel(color: Colors.yellow, child: index.toString());
-              } else if (gameBoard[row][col] != null) {
-                final Tetromino? tetrominoType = gameBoard[row][col];
-                return Pixel(color: tetrominoColors[tetrominoType], child: '');
-              } else {
-                return Pixel(color: Colors.grey[900], child: index.toString());
-              }
-            }));
+        body: Column(
+          children: [
+            Expanded(
+              child: GridView.builder(
+                  itemCount: rowLength * colLength,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: rowLength),
+                  itemBuilder: (context, index) {
+                    int row = (index / rowLength).floor();
+                    int col = (index % rowLength);
+                    if (currentPiece.position.contains(index)) {
+                      return Pixel(
+                          color: Colors.yellow, child: index.toString());
+                    } else if (gameBoard[row][col] != null) {
+                      final Tetromino? tetrominoType = gameBoard[row][col];
+                      return Pixel(
+                          color: tetrominoColors[tetrominoType], child: '');
+                    } else {
+                      return Pixel(
+                          color: Colors.grey[900], child: index.toString());
+                    }
+                  }),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    //left
+                    IconButton(
+                      onPressed: moveLeft,
+                      color: Colors.white,
+                      icon: Icon(Icons.arrow_back),
+                      iconSize: 48.0,
+                    ),
+                    //rotate
+                    IconButton(
+                      onPressed: rotatePiece,
+                      color: Colors.white,
+                      icon: Icon(Icons.rotate_right),
+                      iconSize: 48.0,
+                    ),
+
+                    //right
+                    IconButton(
+                      onPressed: moveRight,
+                      color: Colors.white,
+                      icon: Icon(Icons.arrow_forward),
+                      iconSize: 48.0,
+                    ),
+                  ]),
+            )
+          ],
+        ));
   }
 }
