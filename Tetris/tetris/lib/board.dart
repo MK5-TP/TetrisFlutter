@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:tetris/values.dart';
 import 'pixel.dart';
 import 'piece.dart';
-import 'values.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 List<List<Tetromino?>> gameBoard =
     List.generate(colLength, (i) => List.generate(rowLength, (j) => null));
@@ -18,24 +18,43 @@ class GameBoard extends StatefulWidget {
 }
 
 class _GameBoardState extends State<GameBoard> {
-  Piece currentPiece = Piece(type: Tetromino.L);
+  Piece currentPiece =
+      Piece(type: Tetromino.values[Random().nextInt(Tetromino.values.length)]);
 
   int currentScore = 0; //スコア
 
   bool gameOver = false;
 
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  double tiltThreshold = 3.0; // 傾きのしきい値
+
+  double lastX = 0, lastY = 0, lastZ = 0;
+  double shakeThreshold = 8.0; // 振りのしきい値
+
+  late final AudioPlayer _bgmPlayer;
+
   @override
   void initState() {
     //初期状態
     super.initState();
+    startAccelerometerListener();
+    _bgmPlayer = AudioPlayer();
     startGame();
   }
 
+  @override
+  void dispose() {
+    _accelerometerSubscription?.cancel();
+    _bgmPlayer.dispose();
+    super.dispose();
+  }
+
   void startGame() {
+    playBGM();
     currentPiece.initialaizePiece();
 
     //1フレームのレート
-    Duration framerate = const Duration(milliseconds: 400);
+    Duration framerate = const Duration(milliseconds: 800);
     gameLoop(framerate);
   }
 
@@ -55,6 +74,17 @@ class _GameBoardState extends State<GameBoard> {
       },
     );
   }
+  void playBGM() async {
+    await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+    await _bgmPlayer.play(AssetSource('8bit-casino-hitotooki.mp3'));
+  }
+  void stopBGM() async {
+    await _bgmPlayer.stop();
+  }
+  void playSE(String filename) async {
+    final sePlayer = AudioPlayer();
+    await sePlayer.play(AssetSource('$filename'));
+  }
 
   void showGameOverDialog() {
     showDialog(
@@ -73,9 +103,9 @@ class _GameBoardState extends State<GameBoard> {
             ));
   }
 
-  void resetGame(){
+  void resetGame() {
     gameBoard =
-    List.generate(colLength, (i) => List.generate(rowLength, (j) => null));
+        List.generate(colLength, (i) => List.generate(rowLength, (j) => null));
 
     gameOver = false;
     currentScore = 0;
@@ -133,6 +163,7 @@ class _GameBoardState extends State<GameBoard> {
 
     if (isGameOver()) {
       gameOver = true;
+      stopBGM();
     }
   }
 
@@ -155,6 +186,17 @@ class _GameBoardState extends State<GameBoard> {
   void rotatePiece() {
     setState(() {
       currentPiece.rotatePiece();
+    });
+    //
+    //3.playSE('8bit選択8.mp3');
+  }
+
+  void dropPiece() {
+    setState(() {
+      while (!checkCollision(Direction.down)) {
+        currentPiece.movePiece(Direction.down);
+      }
+      checkLanding();
     });
   }
 
@@ -190,6 +232,37 @@ class _GameBoardState extends State<GameBoard> {
     return false;
   }
 
+  //加速度センサ
+  void startAccelerometerListener() {
+    accelerometerEventStream().listen((event) {
+      handleTilt(event);
+      handleShake(event);
+    });
+  }
+
+  void handleTilt(AccelerometerEvent event) {
+    if (event.x > tiltThreshold) {
+      moveLeft();
+    } else if (event.x < -tiltThreshold) {
+      moveRight();
+    }
+  }
+
+  void handleShake(AccelerometerEvent event) {
+    double deltaX = (event.x - lastX).abs();
+    double deltaY = (event.y - lastY).abs();
+    double deltaZ = (event.z - lastZ).abs();
+
+    if (deltaY > shakeThreshold 
+        ) {
+      dropPiece(); //振ってピース落下
+    }
+
+    lastX = event.x;
+    lastY = event.y;
+    lastZ = event.z;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,15 +279,13 @@ class _GameBoardState extends State<GameBoard> {
                     int row = (index / rowLength).floor();
                     int col = (index % rowLength);
                     if (currentPiece.position.contains(index)) {
-                      return Pixel(
-                          color: Colors.yellow, child:'');
+                      return Pixel(color: Colors.yellow, child: '');
                     } else if (gameBoard[row][col] != null) {
                       final Tetromino? tetrominoType = gameBoard[row][col];
                       return Pixel(
                           color: tetrominoColors[tetrominoType], child: '');
                     } else {
-                      return Pixel(
-                          color: Colors.grey[900], child:'');
+                      return Pixel(color: Colors.grey[900], child: '');
                     }
                   }),
             ),
@@ -239,6 +310,13 @@ class _GameBoardState extends State<GameBoard> {
                       onPressed: rotatePiece,
                       color: Colors.white,
                       icon: Icon(Icons.rotate_right),
+                      iconSize: 48.0,
+                    ),
+                    //HardDrop
+                    IconButton(
+                      onPressed: dropPiece,
+                      color: Colors.white,
+                      icon: Icon(Icons.arrow_downward),
                       iconSize: 48.0,
                     ),
 

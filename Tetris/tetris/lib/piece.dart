@@ -40,7 +40,6 @@ class Piece {
       case Tetromino.T:
         position = [-26, -16, -6, -15];
         break;
-      default:
     }
   }
 
@@ -227,7 +226,7 @@ class Piece {
         break;
       case Tetromino.O:
         break;
-      
+
       case Tetromino.S:
         switch (rotationState) {
           case 0:
@@ -384,7 +383,6 @@ class Piece {
             break;
         }
         break;
-      default:
     }
   }
 
@@ -392,7 +390,13 @@ class Piece {
     int row = (position / rowLength).floor();
     int col = position % rowLength;
 
-    if (row < 0 || col < 0 || gameBoard[row][col] != null) {
+    // row が範囲外のときに false を返す
+    if (row < 0 || row >= colLength || col < 0 || col >= rowLength) {
+      return false;
+    }
+
+    // すでにブロックがある場合も false
+    if (gameBoard[row][col] != null) {
       return false;
     } else {
       return true;
